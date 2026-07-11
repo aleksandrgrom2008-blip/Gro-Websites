@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CtaBand } from "@/components/cta-band";
+import { HeroGraphic } from "@/components/hero-graphic";
 import { JsonLd } from "@/components/json-ld";
 import { Reveal } from "@/components/reveal";
 import { organizationSchema } from "@/lib/schema";
@@ -136,25 +137,32 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="border-b border-line">
-        <div className="mx-auto max-w-6xl px-6 pt-20 pb-16 md:pt-32 md:pb-24 lg:px-8">
-          <p className="kicker text-accent">Web design for small business</p>
-          <h1 className="mt-6 max-w-[14ch] font-display text-[clamp(2.4rem,13.5vw,3rem)] leading-[1.05] font-semibold tracking-[-0.02em] text-balance md:text-7xl md:leading-none">
-            Your website should be your best salesperson.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-soft">
-            We design and build websites for small businesses with one goal:
-            turning the people who visit into customers who pay.
-          </p>
-          <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
-            <Link href="/contact" className="btn btn-primary">
-              Get a free website audit
-            </Link>
-            <Link
-              href="/process"
-              className="text-[15px] font-medium underline decoration-line underline-offset-4 transition-colors hover:decoration-accent"
-            >
-              See how we work <span aria-hidden="true">→</span>
-            </Link>
+        <div className="mx-auto max-w-6xl px-6 pt-20 pb-16 md:pt-28 md:pb-24 lg:px-8">
+          <div className="grid gap-14 lg:grid-cols-12 lg:items-center">
+            <div className="lg:col-span-7">
+              <p className="kicker text-accent">Web design for small business</p>
+              <h1 className="mt-6 max-w-[14ch] font-display text-[clamp(2.4rem,13.5vw,3rem)] leading-[1.05] font-semibold tracking-[-0.02em] text-balance md:text-7xl md:leading-none">
+                Your website should be your best salesperson.
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-soft">
+                We design and build websites for small businesses with one
+                goal: turning the people who visit into customers who pay.
+              </p>
+              <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+                <Link href="/contact" className="btn btn-primary">
+                  Get a free website audit
+                </Link>
+                <Link
+                  href="/process"
+                  className="text-[15px] font-medium underline decoration-line underline-offset-4 transition-colors hover:decoration-accent"
+                >
+                  See how we work <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </div>
+            <div aria-hidden="true" className="hidden lg:col-span-5 lg:block">
+              <HeroGraphic />
+            </div>
           </div>
           <p className="mt-16 border-t border-line pt-6 text-sm text-ink-soft">
             Built for contractors, dental &amp; medical practices, law firms,

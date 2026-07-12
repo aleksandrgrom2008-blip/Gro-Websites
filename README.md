@@ -39,8 +39,8 @@ npm run lint    # ESLint
 
 | Variable | Required | Exposed to browser? | Purpose |
 | --- | --- | --- | --- |
-| `RESEND_API_KEY` | Yes (for email) | **No** | API key from [resend.com/api-keys](https://resend.com/api-keys). Without it the contact form fails gracefully: the visitor sees a generic error, the real cause is logged server-side. |
-| `CONTACT_EMAIL` | Yes (for email) | **No** | Destination inbox for enquiries. Read only inside `app/api/contact/route.ts` at request time — it never appears in HTML, the JS bundle, or the sitemap. |
+| `RESEND_API_KEY` | Optional (recommended) | **No** | API key from [resend.com/api-keys](https://resend.com/api-keys). When set, enquiries are sent via Resend. When absent, they're relayed through FormSubmit.co instead (see "How email delivery works"). |
+| `CONTACT_EMAIL` | Yes | **No** | Destination inbox for enquiries. Read only inside `app/api/contact/route.ts` at request time — it never appears in HTML, the JS bundle, or the sitemap. Without it, dev prints enquiries to the terminal and production returns a safe generic error. |
 | `NEXT_PUBLIC_SITE_URL` | Yes | Yes (by design) | Canonical site URL, no trailing slash. Drives `metadataBase`, canonical tags, Open Graph URLs, `sitemap.xml`, and `robots.txt`. |
 
 Never prefix a secret with `NEXT_PUBLIC_` — that prefix inlines the value
@@ -65,6 +65,36 @@ into the client bundle.
 
 The security headers in `next.config.ts` are served automatically by Vercel —
 no extra configuration needed.
+
+### How email delivery works
+
+Enquiries are delivered to `CONTACT_EMAIL` through one of two routes, chosen
+automatically in `app/api/contact/route.ts`:
+
+1. **With `RESEND_API_KEY` set** — sent via Resend. Recommended for
+   production: proper deliverability, your own verified domain, delivery
+   logs.
+2. **Without a key** — relayed server-side through
+   [FormSubmit.co](https://formsubmit.co), which forwards to `CONTACT_EMAIL`
+   with no account or API key. **The very first submission triggers a
+   one-time activation email to that inbox — click its confirmation link
+   once**, and every submission after that is forwarded. A free relay has
+   weaker deliverability than a real provider (check spam the first time),
+   so treat this as a stopgap and add a Resend key when you can.
+
+Either way, the destination address is only ever read server-side and never
+appears in any client-delivered asset.
+
+To upgrade to Resend later:
+
+1. Sign up at [resend.com](https://resend.com) — use the same email you set
+   as `CONTACT_EMAIL`. Until you verify your own domain, Resend's shared
+   `onboarding@resend.dev` sender can **only deliver to the email address
+   your Resend account is registered under**.
+2. Create an API key at [resend.com/api-keys](https://resend.com/api-keys).
+3. Put it in `.env.local` (for local testing) and in Vercel under
+   **Project → Settings → Environment Variables** (for the live site), then
+   redeploy. The code switches to Resend automatically.
 
 ### Resend domain setup
 

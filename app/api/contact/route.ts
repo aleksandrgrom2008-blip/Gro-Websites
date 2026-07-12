@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { z } from "zod";
+import { siteUrl } from "@/lib/site";
 
 /*
  * Contact form endpoint. Only POST is exported, so Next.js automatically
@@ -131,16 +132,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    const apiKey = process.env.RESEND_API_KEY;
-    const contactEmail = process.env.CONTACT_EMAIL;
-    if (!apiKey || !contactEmail) {
-      console.error(
-        "[contact] RESEND_API_KEY and/or CONTACT_EMAIL is not set — cannot deliver this enquiry. " +
-          "Add both to .env.local (or the Vercel dashboard) and redeploy.",
-      );
-      return NextResponse.json({ error: GENERIC_ERROR }, { status: 500 });
-    }
-
     const name = singleLine(data.name);
     const business = singleLine(data.business);
     const email = singleLine(data.email);
@@ -159,22 +150,112 @@ export async function POST(request: Request) {
       data.message.trim(),
     ].join("\n");
 
-    const resend = new Resend(apiKey);
-    const { error } = await resend.emails.send({
-      // TODO: switch to your own verified domain in Resend (e.g.
-      // "Gro Websites <hello@growebsites.com>") once DNS is verified.
-      from: "Gro Websites <onboarding@resend.dev>",
-      to: contactEmail,
-      replyTo: email,
-      subject: `New website enquiry — ${name}, ${business}`,
-      text,
-    });
-
-    if (error) {
-      console.error("[contact] Resend rejected the send:", error);
+    const apiKey = process.env.RESEND_API_KEY;
+    const contactEmail = process.env.CONTACT_EMAIL;
+    if (!contactEmail) {
+      // In local development, complete the flow so the form can be
+      // exercised end-to-end — the enquiry is printed to the terminal
+      // instead of emailed. Production still fails safely: the fix there
+      // is setting CONTACT_EMAIL in Vercel.
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          "[contact] DEV MODE — CONTACT_EMAIL is not set, so NO EMAIL was sent. " +
+            "The enquiry that would have been delivered:\n\n" +
+            text +
+            "\n",
+        );
+        return NextResponse.json({ ok: true });
+      }
+      console.error(
+        "[contact] CONTACT_EMAIL is not set — cannot deliver this enquiry. " +
+          "Add it under Vercel → Project → Settings → Environment Variables and redeploy.",
+      );
       return NextResponse.json({ error: GENERIC_ERROR }, { status: 500 });
     }
 
+    if (apiKey) {
+      const resend = new Resend(apiKey);
+      const { error } = await resend.emails.send({
+        // TODO: switch to your own verified domain in Resend (e.g.
+        // "Gro Websites <hello@growebsites.com>") once DNS is verified.
+        from: "Gro Websites <onboarding@resend.dev>",
+        to: contactEmail,
+        replyTo: email,
+        subject: `New website enquiry — ${name}, ${business}`,
+        text,
+      });
+
+      if (error) {
+        console.error("[contact] Resend rejected the send:", error);
+        return NextResponse.json({ error: GENERIC_ERROR }, { status: 500 });
+      }
+
+      return NextResponse.json({ ok: true });
+    }
+
+    /*
+     * Interim delivery without a Resend key: relay the enquiry through
+     * FormSubmit.co, which forwards to CONTACT_EMAIL with no account or
+     * API key. The address is only ever used server-side, so it still
+     * never reaches the client. First-ever submission triggers a one-time
+     * activation email that must be confirmed in the inbox.
+     *
+     * TODO: this is a stopgap — a free relay has weaker deliverability
+     * than a real provider. Add RESEND_API_KEY when ready and this branch
+     * stops being used automatically.
+     */
+    const relayResponse = await fetch(
+      `https://formsubmit.co/ajax/${encodeURIComponent(contactEmail)}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          // FormSubmit rejects requests without a source page; identify
+          // ourselves as this site since the relay call is server-side.
+          Origin: siteUrl,
+          Referer: `${siteUrl}/contact`,
+        },
+        body: JSON.stringify({
+          _subject: `New website enquiry — ${name}, ${business}`,
+          _template: "box",
+          _captcha: "false",
+          _replyto: email,
+          name,
+          business,
+          email,
+          phone: phone || "—",
+          "looking for": needLabels[data.need],
+          message: data.message.trim(),
+        }),
+        signal: AbortSignal.timeout(10_000),
+      },
+    );
+
+    const relayResult = (await relayResponse.json().catch(() => null)) as {
+      success?: string | boolean;
+      message?: string;
+    } | null;
+
+    // FormSubmit reports failures (including pending activation) in its
+    // JSON body even on HTTP 200 — trust the success flag, not the status.
+    const relayed =
+      relayResponse.ok &&
+      relayResult !== null &&
+      String(relayResult.success).toLowerCase() === "true";
+
+    if (!relayed) {
+      console.error(
+        "[contact] FormSubmit relay did not accept the enquiry:",
+        relayResponse.status,
+        relayResult?.message ?? "(no detail)",
+      );
+      return NextResponse.json({ error: GENERIC_ERROR }, { status: 500 });
+    }
+
+    console.log(
+      `[contact] Enquiry relayed via FormSubmit: ${relayResult?.message ?? "ok"}`,
+    );
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[contact] Unexpected error:", err);

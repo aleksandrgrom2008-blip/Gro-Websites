@@ -51,7 +51,7 @@ export default function PrivacyPage() {
                 How we use it
               </h2>
               <p className="mt-3 text-ink-soft">
-                Your enquiry is delivered to our inbox by Resend, the email
+                Your enquiry is delivered to our inbox by an email delivery
                 service that processes contact-form submissions on our behalf.
                 We use your details for one thing: replying to you. We don’t
                 sell them, share them, or add you to a mailing list.

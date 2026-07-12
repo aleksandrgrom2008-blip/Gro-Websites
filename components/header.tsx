@@ -31,7 +31,12 @@ export function Header() {
           href="/"
           className="flex items-center gap-2.5 font-display text-[17px] font-semibold tracking-tight"
         >
-          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-[1px] bg-accent" />
+          <span
+            aria-hidden="true"
+            className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-accent font-display text-[15px] font-bold text-white"
+          >
+            G
+          </span>
           Gro Websites
         </Link>
 

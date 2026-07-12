@@ -8,7 +8,12 @@ export function Footer() {
         <div className="grid gap-10 md:grid-cols-12">
           <div className="md:col-span-6">
             <p className="flex items-center gap-2.5 font-display text-[17px] font-semibold tracking-tight">
-              <span aria-hidden="true" className="h-2.5 w-2.5 rounded-[1px] bg-accent" />
+              <span
+                aria-hidden="true"
+                className="flex h-6 w-6 items-center justify-center rounded-[5px] bg-accent font-display text-[15px] font-bold text-white"
+              >
+                G
+              </span>
               Gro Websites
             </p>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-soft">
